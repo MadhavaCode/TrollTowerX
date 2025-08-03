@@ -1,0 +1,45 @@
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local damageFolder = Workspace.Model:WaitForChild("dmgParts")
+local killFolder = Workspace.Model:WaitForChild("killParts")
+
+local damageSound = ReplicatedStorage:FindFirstChild("DamageSound")
+
+local DAMAGE_AMOUNT = 3
+
+-- Damage parts
+for _, part in ipairs(damageFolder:GetChildren()) do
+	if part:IsA("BasePart") then
+		part.Touched:Connect(function(hit)
+			local character = hit:FindFirstAncestorOfClass("Model")
+			local humanoid = character and character:FindFirstChild("Humanoid")
+
+			if humanoid and humanoid.Health > 0 then
+				humanoid:TakeDamage(DAMAGE_AMOUNT)
+
+				-- Play sound if exists
+				if damageSound then
+					local soundClone = damageSound:Clone()
+					soundClone.Parent = character:FindFirstChild("Head") or character.PrimaryPart or character
+					soundClone:Play()
+					game:GetService("Debris"):AddItem(soundClone, 2)
+				end
+			end
+		end)
+	end
+end
+
+-- Kill parts
+for _, part in ipairs(killFolder:GetChildren()) do
+	if part:IsA("BasePart") then
+		part.Touched:Connect(function(hit)
+			local character = hit:FindFirstAncestorOfClass("Model")
+			local humanoid = character and character:FindFirstChild("Humanoid")
+
+			if humanoid and humanoid.Health > 0 then
+				humanoid.Health = 0
+			end
+		end)
+	end
+end
