@@ -1,0 +1,27 @@
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
+
+-- Replace with your real product ID
+local SKIP_TO_END_PRODUCT_ID = 3351577151
+
+-- Function to teleport player to the end
+local function skipToEnd(player)
+	local endPart = workspace:WaitForChild("Model"):FindFirstChild("EndPart") -- or a checkpoint/stage
+	if endPart and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		player.Character.HumanoidRootPart.CFrame = endPart.CFrame + Vector3.new(0, 1, 0)
+	end
+end
+
+-- Receipt handler
+MarketplaceService.ProcessReceipt = function(receiptInfo)
+	local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
+	if not player then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+
+	if receiptInfo.ProductId == SKIP_TO_END_PRODUCT_ID then
+		skipToEnd(player)
+	end
+
+	return Enum.ProductPurchaseDecision.PurchaseGranted
+end
