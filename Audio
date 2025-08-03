@@ -1,0 +1,134 @@
+-- Brought to you by the Creator of Digity Studios!
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+
+-- Move PlayerAudioManager to ReplicatedStorage
+local playerAudioManagerScript = script:WaitForChild("PlayerAudioManager")
+playerAudioManagerScript.Parent = ReplicatedStorage
+
+-- Require the module
+local PlayerAudioManager = require(ReplicatedStorage:WaitForChild("PlayerAudioManager"))
+
+-- Create RemoteEvent for mute toggle
+local muteEvent = Instance.new("RemoteEvent")
+muteEvent.Name = "MuteAudioEvent"
+muteEvent.Parent = ReplicatedStorage
+
+-- Clone MusicFolder to ReplicatedStorage
+local function cloneMusicFolderToReplicatedStorage()
+	local musicFolder = script:FindFirstChild("MusicFolder")
+	if not musicFolder then
+		warn("MusicFolder not found in AudioScript.")
+		return
+	end
+
+	local existing = ReplicatedStorage:FindFirstChild("MusicFolder")
+	if existing then existing:Destroy() end
+
+	local clone = musicFolder:Clone()
+	clone.Name = "MusicFolder"
+	clone.Parent = ReplicatedStorage
+	print("MusicFolder cloned to ReplicatedStorage successfully.")
+end
+
+cloneMusicFolderToReplicatedStorage()
+
+-- Helper function to clone the mute GUI into a player's PlayerGui
+local function cloneMuteGuiForPlayer(player)
+	local muteGui = script:FindFirstChild("MuteButtonGui")
+	if not muteGui then return end
+
+	local playerGui = player:FindFirstChild("PlayerGui")
+	if not playerGui then return end
+
+	-- Remove old GUI if exists
+	local existing = playerGui:FindFirstChild(muteGui.Name)
+	if existing then
+		existing:Destroy()
+	end
+
+	local guiClone = muteGui:Clone()
+	guiClone.Parent = playerGui
+end
+
+-- Setup for each player
+local function onPlayerAdded(player)
+	player.CharacterAdded:Connect(function(character)
+		local humanoid = character:WaitForChild("Humanoid", 5)
+		if humanoid then
+			humanoid.Died:Connect(function()
+				local state = PlayerAudioManager.getPlayerState(player)
+				if state and not state.firstJoin then
+					PlayerAudioManager.updateTimePosition(player)
+				end
+			end)
+		end
+
+		local playerGui = player:WaitForChild("PlayerGui", 5)
+		if playerGui then
+			-- Remove existing MusicFolder to avoid duplicates
+			local existing = playerGui:FindFirstChild("MusicFolder")
+			if existing then existing:Destroy() end
+
+			local musicFolder = ReplicatedStorage:FindFirstChild("MusicFolder")
+			if musicFolder then
+				local clone = musicFolder:Clone()
+				clone.Parent = playerGui
+				print("MusicFolder cloned to PlayerGui for", player.Name, "on respawn.")
+				PlayerAudioManager.resumePlayback(player)
+			else
+				warn("No MusicFolder found in ReplicatedStorage for", player.Name)
+			end
+
+			PlayerAudioManager.setMuteState(player, false)
+
+			-- Set flags to mark the player has fully spawned once
+			local state = PlayerAudioManager.getPlayerState(player)
+			if state then
+				state.hasSpawnedOnce = true
+				state.firstJoin = false
+			end
+
+			-- Clone mute button GUI every respawn
+			cloneMuteGuiForPlayer(player)
+		end
+	end)
+
+	-- Initial setup on player join
+	local playerGui = player:WaitForChild("PlayerGui", 5)
+	if playerGui then
+		local existing = playerGui:FindFirstChild("MusicFolder")
+		if existing then existing:Destroy() end
+
+		local musicFolder = ReplicatedStorage:FindFirstChild("MusicFolder")
+		if musicFolder then
+			local clone = musicFolder:Clone()
+			clone.Parent = playerGui
+			print("MusicFolder cloned to PlayerGui for", player.Name)
+		else
+			warn("No MusicFolder found in ReplicatedStorage for", player.Name)
+		end
+
+		-- Clone the mute button GUI on first join
+		cloneMuteGuiForPlayer(player)
+	end
+
+	PlayerAudioManager.playShuffledAudio(player)
+	muteEvent:FireClient(player, false) -- Initial mute state
+end
+
+Players.PlayerAdded:Connect(onPlayerAdded)
+
+-- Mute event handling
+muteEvent.OnServerEvent:Connect(function(player, newMutedState)
+	PlayerAudioManager.setMuteState(player, newMutedState)
+	muteEvent:FireClient(player, newMutedState) -- Confirm to client
+end)
+
+-- Cleanup (optional, if your module stores state)
+Players.PlayerRemoving:Connect(function(player)
+	if PlayerAudioManager.cleanupPlayer then
+		PlayerAudioManager.cleanupPlayer(player)
+	end
+end)
