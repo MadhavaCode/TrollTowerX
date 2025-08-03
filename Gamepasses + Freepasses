@@ -1,0 +1,176 @@
+----- Variables -----
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local RainbowCarpetgamePassId = 1342702376
+local TimeBombgamePassId = 1346972248
+local SlapgamePassId = 1347164344
+local AdmingamepassId = 1347071599
+local rainbowSlapgamepassID = 1354164434
+
+-- Wait for character to load
+local function getCharacter()
+	return player.Character or player.CharacterAdded:Wait()
+end
+
+local function getPlayerFromHit(hit)
+	local character = hit:FindFirstAncestorOfClass("Model")
+	if character then
+		return Players:GetPlayerFromCharacter(character)
+	end
+	
+	return nil
+end
+
+-- Function to connect touch events to all parts in a carpet model
+local function connectCarpetTouchEvents(carpetModel)
+	local touchZone = carpetModel:WaitForChild("TouchZone")
+	
+	if touchZone then
+		--print("Found Touch Zone")
+		
+		touchZone.Touched:Connect(function(hit)
+			local character = getCharacter()
+			if hit:IsDescendantOf(character) then
+				--print("Touched a rainbow carpet!")
+				MarketplaceService:PromptGamePassPurchase(player, RainbowCarpetgamePassId)
+			end
+		end)
+	end
+	
+	
+end
+
+-- Function to connect touch events to all parts in a bomb model
+local function connectBombTouchEvents(bombModel)
+	local touchZone = bombModel:WaitForChild("TouchZone")
+
+	if touchZone then
+		--print("Found Touch Zone")
+
+		touchZone.Touched:Connect(function(hit)
+			local character = getCharacter()
+			if hit:IsDescendantOf(character) then
+				--print("Touched a time bomb!")
+				MarketplaceService:PromptGamePassPurchase(player, TimeBombgamePassId)
+			end
+		end)
+	end
+
+
+end
+
+-- Function to connect touch events to all parts in a slap model
+local function connectSlapTouchEvents(slapModel)
+	local touchZone = slapModel:WaitForChild("TouchZone")
+
+	if touchZone then
+		--print("Found Touch Zone")
+
+		touchZone.Touched:Connect(function(hit)
+			local character = getCharacter()
+			if hit:IsDescendantOf(character) then
+				--print("Touched a slap!")
+				MarketplaceService:PromptGamePassPurchase(player, SlapgamePassId)
+			end
+		end)
+	end
+
+
+end
+
+-- Function to connect touch events to all parts in a admin model
+local function connectAdminTouchEvents(adminModel)
+	local touchZone = adminModel:WaitForChild("TouchZone")
+
+	if touchZone then
+		--print("Found Touch Zone")
+
+		touchZone.Touched:Connect(function(hit)
+			local character = getCharacter()
+			if hit:IsDescendantOf(character) then
+				--print("Touched a admin!")
+				MarketplaceService:PromptGamePassPurchase(player, AdmingamepassId)
+			end
+		end)
+	end
+
+
+end
+
+-- Function to connect touch events to all parts in a admin model
+local function connectRainbowSlapTouchEvents(rainbowSlapModel)
+	local touchZone = rainbowSlapModel:WaitForChild("TouchZone")
+
+	if touchZone then
+		--print("Found Touch Zone")
+
+		touchZone.Touched:Connect(function(hit)
+			local character = getCharacter()
+			if hit:IsDescendantOf(character) then
+				--print("Touched a rainbow slap!")
+				MarketplaceService:PromptGamePassPurchase(player, rainbowSlapgamepassID)
+			end
+		end)
+	end
+
+
+end
+
+-- Function to connect touch events to all parts in a free slap model
+local function connectFreeSlapTouchEvents(freeSlapModel)
+	local touchZone = freeSlapModel:WaitForChild("TouchZone")
+	local remote = game:GetService("ReplicatedStorage"):WaitForChild("GiveFreeSlap")
+
+	if touchZone then
+		print("Found Free Slap Touch Zone")
+
+		touchZone.Touched:Connect(function(hit)
+			local player = getPlayerFromHit(hit)
+
+			if player then
+				print("Touched a Free Slap!")
+				remote:FireServer() -- Ask server to give tool
+			end
+		end)
+	end
+end
+
+
+-- Function to connect touch events to all parts in a free slap model
+local function connectBlueishFreeSlapTouchEvents(freeSlapModel)
+	local touchZone = freeSlapModel:WaitForChild("TouchZone")
+	local remote = game:GetService("ReplicatedStorage"):WaitForChild("GiveBlueishSlap")
+
+	if touchZone then
+		print("Found blueish Free Slap Touch Zone")
+
+		touchZone.Touched:Connect(function(hit)
+			local player = getPlayerFromHit(hit)
+
+			if player then
+				print("Touched a blueish Free Slap!")
+				remote:FireServer() -- Ask server to give tool
+			end
+		end)
+	end
+end
+
+-- Find all rainbow carpet models anywhere in the map
+for _, obj in ipairs(workspace:GetDescendants()) do
+	if obj:IsA("Model") and obj.Name == "RainbowCarpet" then
+		connectCarpetTouchEvents(obj)
+	elseif obj:IsA("Model") and obj.Name == "Bomb" then
+		connectBombTouchEvents(obj)
+	elseif obj:IsA("Model") and obj.Name == "Slap" then
+		connectSlapTouchEvents(obj)
+	elseif obj:IsA("Model") and obj.Name == "admin" then
+		connectAdminTouchEvents(obj)
+	elseif obj:IsA("Model") and obj.Name == "FreeSlap" then
+		connectFreeSlapTouchEvents(obj)
+	elseif obj:IsA("Model") and obj.Name == "RainbowSlap" then
+		connectRainbowSlapTouchEvents(obj)
+	elseif obj:IsA("Model") and obj.Name == "BlueishFreeSlap" then
+		connectBlueishFreeSlapTouchEvents(obj)
+	end
+end
