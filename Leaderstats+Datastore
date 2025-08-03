@@ -1,0 +1,69 @@
+local Players = game:GetService("Players")
+local DataStoreService = game:GetService("DataStoreService")
+
+local WinsDataStore = DataStoreService:GetDataStore("WinsDataStore") -- for player-specific
+local OrderedWins = DataStoreService:GetOrderedDataStore("GlobalWinsLeaderboard") -- for leaderboard
+
+
+game.Players.PlayerAdded:Connect(function(player) 
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+	
+	local wins = Instance.new("IntValue")
+	wins.Name = "wins"
+	wins.Parent = leaderstats
+	
+	local success, savedWins = pcall(function()
+		return WinsDataStore:GetAsync("wins_" .. player.UserId)
+	end)
+	
+	if success and savedWins then
+		wins.Value = savedWins
+	else
+		wins.Value = 0
+	end
+end)
+
+local function saveAllPlayers()
+	for _, player in pairs(Players:GetPlayers()) do
+		local leaderstats = player:FindFirstChild("leaderstats")
+		if leaderstats then
+			local wins = leaderstats:FindFirstChild("wins")
+			if wins then
+				local userId = tostring(player.UserId)
+				local success, err = pcall(function()
+					WinsDataStore:SetAsync("wins_" .. userId, wins.Value)
+					OrderedWins:SetAsync(userId, wins.Value)
+				end)
+				if not success then
+					warn("Failed to save wins for", player.Name, err)
+				end
+			end
+		end
+	end
+end
+
+-- Save on exit
+Players.PlayerRemoving:Connect(function(player)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local wins = leaderstats:FindFirstChild("wins")
+		if wins then
+			local userId = tostring(player.UserId)
+			
+			pcall(function()
+				WinsDataStore:SetAsync("wins_" .. userId, wins.Value)
+			end)
+			
+			pcall(function()
+				OrderedWins:SetAsync(userId, wins.Value)
+			end)
+		end
+	end
+end)
+
+while true do
+	wait(59)
+	saveAllPlayers()
+end
